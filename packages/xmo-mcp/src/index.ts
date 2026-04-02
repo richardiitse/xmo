@@ -8,6 +8,8 @@ import {
 import { xmo_extract, handleExtract } from "./tools/extract.js";
 import { xmo_query, handleQuery } from "./tools/query.js";
 import { xmo_consolidate, handleConsolidate } from "./tools/consolidate.js";
+import { xmo_load, handleLoad } from "./tools/loader.js";
+import { xmo_stats, handleStats } from "./tools/stats.js";
 
 const server = new Server(
   {
@@ -22,7 +24,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: [xmo_extract, xmo_query, xmo_consolidate] };
+  return { tools: [xmo_extract, xmo_query, xmo_consolidate, xmo_load, xmo_stats] };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -35,6 +37,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       return handleQuery(args);
     case "xmo_consolidate":
       return handleConsolidate(args);
+    case "xmo_load":
+      return handleLoad(args);
+    case "xmo_stats":
+      return handleStats(args);
     default:
       return {
         content: [{ type: "text", text: `Unknown tool: ${name}` }],
