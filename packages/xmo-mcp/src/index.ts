@@ -5,6 +5,8 @@ import {
   CallToolRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 
+import { xmo_extract, handleExtract } from "./tools/extract.js";
+
 const server = new Server(
   {
     name: "xmo-mcp",
@@ -18,18 +20,21 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: [] };
+  return { tools: [xmo_extract] };
 });
 
-server.setRequestHandler(CallToolRequestSchema, async () => {
-  return {
-    content: [
-      {
-        type: "text",
-        text: "XMO MCP Server ready",
-      },
-    ],
-  };
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  const { name, arguments: args } = request.params;
+
+  switch (name) {
+    case "xmo_extract":
+      return handleExtract(args);
+    default:
+      return {
+        content: [{ type: "text", text: `Unknown tool: ${name}` }],
+        isError: true,
+      };
+  }
 });
 
 async function main() {
