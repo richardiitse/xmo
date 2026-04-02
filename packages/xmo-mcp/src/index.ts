@@ -6,6 +6,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 import { xmo_extract, handleExtract } from "./tools/extract.js";
+import { xmo_query, handleQuery } from "./tools/query.js";
 
 const server = new Server(
   {
@@ -20,7 +21,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: [xmo_extract] };
+  return { tools: [xmo_extract, xmo_query] };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -29,6 +30,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (name) {
     case "xmo_extract":
       return handleExtract(args);
+    case "xmo_query":
+      return handleQuery(args);
     default:
       return {
         content: [{ type: "text", text: `Unknown tool: ${name}` }],
