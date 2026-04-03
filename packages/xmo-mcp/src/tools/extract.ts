@@ -9,20 +9,33 @@ export const xmo_extract = {
     properties: {
       type: {
         type: 'string',
-        enum: ['Decision', 'Finding', 'LessonLearned', 'Commitment', 'ContextSnapshot'],
+        enum: ['Decision', 'Finding', 'LessonLearned', 'Commitment', 'ContextSnapshot', 'url', 'person', 'concept', 'tool'],
         description: 'Type of entity to extract',
       },
-      title: { type: 'string', description: 'Brief title' },
+      name: { type: 'string', description: 'Entity name/title' },
       content: { type: 'string', description: 'Detailed content' },
       tags: { type: 'array', items: { type: 'string' }, default: [] },
+      properties: { type: 'object', description: 'Additional metadata' },
     },
-    required: ['type', 'title', 'content'],
+    required: ['type', 'name', 'content'],
   },
 }
 
 export async function handleExtract(args: unknown): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
-  const params = args as ExtractedContent
-  const result = await extractEntities([params])
+  const params = args as { type: string; name: string; content: string; tags?: string[]; properties?: Record<string, unknown> }
+  const extracted: ExtractedContent = {
+    type: params.type as ExtractedContent['type'],
+    title: params.name,
+    content: params.content,
+    tags: params.tags ?? [],
+    properties: {
+      name: params.name,
+      source: 'manual',
+      ...params.properties,
+    },
+  }
+
+  const result = await extractEntities([extracted])
 
   if (result.success) {
     return {

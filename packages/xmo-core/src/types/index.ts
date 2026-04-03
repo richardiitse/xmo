@@ -4,7 +4,11 @@ export type EntityType =
   | 'Finding'
   | 'LessonLearned'
   | 'Commitment'
-  | 'ContextSnapshot';
+  | 'ContextSnapshot'
+  | 'url'
+  | 'person'
+  | 'concept'
+  | 'tool';
 
 // Relation Types
 export type RelationType =
@@ -18,10 +22,21 @@ export type RelationType =
 export interface Entity {
   id: string;
   type: EntityType;
+  sessionId?: string;
+  extractedAt?: string;
+  lastSeenAt?: string;
+  occurrences?: number;
   createdAt: string;
   updatedAt: string;
   tags: string[];
-  properties: Record<string, unknown>;
+  properties: {
+    name?: string;
+    title?: string;
+    content?: string;
+    source?: 'extract' | 'consolidation' | 'manual';
+    confidence?: 'high' | 'medium' | 'low';
+    [key: string]: unknown;
+  };
 }
 
 // Core Relation Interface

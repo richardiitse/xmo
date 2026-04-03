@@ -2,39 +2,52 @@ import { queryEntities } from '../services/query.js'
 
 export const xmo_query = {
   name: 'xmo_query',
-  description: 'Semantic search across memory',
+  description: 'Search memory using keyword/grep search',
   inputSchema: {
     type: 'object',
     properties: {
-      query: { type: 'string', description: 'Search query' },
+      keywords: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Keywords to search for (AND logic across keywords)',
+      },
       type: {
         type: 'string',
-        enum: ['Decision', 'Finding', 'LessonLearned', 'Commitment', 'ContextSnapshot'],
+        enum: ['Decision', 'Finding', 'LessonLearned', 'Commitment', 'ContextSnapshot', 'url', 'person', 'concept', 'tool'],
         description: 'Filter by entity type',
       },
-      tags: { type: 'array', items: { type: 'string' }, description: 'Filter by tags' },
-      limit: { type: 'number', default: 5 },
+      limit: { type: 'number', default: 20 },
     },
-    required: ['query'],
+    required: ['keywords'],
   },
 }
 
 export async function handleQuery(args: unknown): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
-  const params = args as { query: string; type?: string; tags?: string[]; limit?: number }
+  const params = args as { keywords: string[]; type?: string; limit?: number }
+  const keywords = params.keywords ?? []
+  if (keywords.length === 0) {
+    return { content: [{ type: 'text', text: 'No keywords provided' }] }
+  }
 
-  const results = await queryEntities(params.query, {
+  const start = Date.now()
+  const results = await queryEntities(keywords, {
     type: params.type,
-    tags: params.tags,
-    limit: params.limit || 5,
+    limit: params.limit || 20,
   })
 
   if (results.length === 0) {
     return { content: [{ type: 'text', text: 'No results found' }] }
   }
 
+  const queryMs = Date.now() - start
   const output = results
-    .map(r => `[${r.entity.type}] ${r.entity.properties.title} (score: ${r.score.toFixed(3)})\n${r.entity.properties.content}`)
+    .map(r => {
+      const name = (r.entity.properties.name as string | undefined) ?? (r.entity.properties.title as string | undefined) ?? '(unnamed)'
+      const content = (r.entity.properties.content as string | undefined) ?? ''
+      return `[${r.entity.type}] ${name} (matched: "${r.matchedKeyword}")\n${content}`
+    })
     .join('\n\n---\n\n')
 
-  return { content: [{ type: 'text', text: output }] }
+  const summary = `Found ${results.length} result(s) in ${queryMs}ms`
+  return { content: [{ type: 'text', text: `${summary}\n\n${output}` }] }
 }

@@ -47,7 +47,9 @@ export async function loadStage2(projectId?: string): Promise<LoadResult> {
 }
 
 export async function loadStage3(context: string): Promise<LoadResult> {
-  const results = await queryEntities(context, { limit: 10 })
+  // Split context into keywords for grep search
+  const keywords = context.split(/\s+/).filter(k => k.length > 1)
+  const results = await queryEntities(keywords, { limit: 10 })
 
   return {
     stage: 3,
@@ -62,6 +64,10 @@ function formatEntities(entities: Entity[]): string {
   }
 
   return entities
-    .map(e => `[${e.type}] ${e.properties.title}\n${e.properties.content}`)
+    .map(e => {
+      const name = (e.properties.name as string | undefined) ?? (e.properties.title as string | undefined) ?? '(unnamed)'
+      const content = (e.properties.content as string | undefined) ?? ''
+      return `[${e.type}] ${name}${content ? '\n' + content : ''}`
+    })
     .join('\n\n')
 }
