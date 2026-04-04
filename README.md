@@ -5,6 +5,7 @@ A complete memory management system for Claude Code and OpenClaw, inspired by Ka
 ## Features
 
 - **Automatic Extraction**: Extract key decisions, findings, and lessons from conversations
+- **OpenClaw Session Auto-Extraction**: Automatically extract entities from OpenClaw session history
 - **Dream Consolidation**: Background memory consolidation with triple-gate mechanism
 - **Proactive Loading**: Staged memory recovery at startup
 - **Semantic Query**: Search memory using keyword-based grep search
@@ -20,6 +21,30 @@ XMO extracts entities from session transcripts using swappable adapters:
 | OpenClaw | `~/.openclaw/agents/*/sessions/*.jsonl` | Built-in |
 
 Both adapters implement the `ToolAdapter` interface for unified entity extraction.
+
+### OpenClaw Session Auto-Extraction
+
+XMO can automatically extract entities from OpenClaw session history:
+
+- **Full Extraction**: Extract entities from all OpenClaw sessions on demand
+- **Cron Scheduling**: Hourly automatic extraction via cron job
+- **Duplicate Avoidance**: Tracks last extraction time to avoid re-processing
+
+#### Setup Cron Job
+
+```bash
+# Add to crontab (runs every hour at minute 0)
+0 * * * * /usr/local/bin/node /Users/richard/Documents/52VisionWorld/projects/xmo/scripts/xmo-cron-extract.mjs >> ~/.xmo/cron.log 2>&1
+```
+
+#### Manual Extraction
+
+```bash
+# Run full extraction
+node scripts/xmo-cron-extract.mjs
+
+# Or via MCP tool: xmo_extract_sessions
+```
 
 ## Architecture
 
@@ -55,7 +80,7 @@ After installation, Claude Code can use:
 /xmo-extract  # Extract entities from current session
 /xmo-query    # Search memory
 /xmo-dream    # Trigger consolidation
-/xmo-stats     # View statistics
+/xmo-stats    # View statistics
 ```
 
 ## OpenClaw Configuration
@@ -104,6 +129,7 @@ Add this section to each workspace's MEMORY.md:
 | Tool | Description |
 |------|-------------|
 | `xmo_extract` | Extract key information to memory |
+| `xmo_extract_sessions` | Extract entities from OpenClaw session history |
 | `xmo_query` | Search memory using keywords |
 | `xmo_consolidate` | Trigger memory consolidation |
 | `xmo_load` | Load memory into context |
@@ -113,6 +139,7 @@ Add this section to each workspace's MEMORY.md:
 
 - **Location**: `~/.xmo/kg/entities.jsonl`
 - **Lock**: `~/.xmo/dream.lock`
+- **Cron Log**: `~/.xmo/cron.log`
 - **Format**: JSONL (one entity per line)
 
 ## Project Structure
@@ -121,9 +148,20 @@ Add this section to each workspace's MEMORY.md:
 xmo/
 ├── packages/
 │   ├── xmo-core/           # Shared library
-│   ├── xmo-mcp/           # MCP Server
-│   └── xmo-skill/         # Skill Package
+│   │   └── src/adapters/   # Session adapters (ClaudeCode, OpenClaw)
+│   ├── xmo-mcp/            # MCP Server
+│   │   └── src/tools/      # MCP tools
+│   └── xmo-skill/          # Skill Package
+├── scripts/
+│   └── xmo-cron-extract.mjs  # Cron extraction script
 └── README.md
+```
+
+## Testing
+
+```bash
+pnpm test        # Run all tests
+pnpm build       # Build all packages
 ```
 
 ## Design
