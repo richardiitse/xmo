@@ -1,8 +1,6 @@
-import { appendJSONL, generateEntityId, KG_DIR } from '@xmo/core'
+import { appendJSONL, generateEntityId, KG_FILE } from '@xmo/core'
 import type { ExtractedContent, ExtractionResult } from './types.js'
 import type { Entity } from '@xmo/core'
-
-const KG_FILE = `${KG_DIR}/entities.jsonl`
 
 export async function extractEntities(
   contents: ExtractedContent[]
@@ -11,15 +9,21 @@ export async function extractEntities(
     const entities: Entity[] = []
 
     for (const content of contents) {
+      const now = new Date().toISOString()
       const entity: Entity = {
         id: generateEntityId(content.type),
         type: content.type,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        extractedAt: now,
+        lastSeenAt: now,
+        occurrences: 1,
+        createdAt: now,
+        updatedAt: now,
         tags: content.tags,
         properties: {
+          name: content.name ?? content.title,
           title: content.title,
           content: content.content,
+          source: 'extract',
           ...content.properties,
         },
       }

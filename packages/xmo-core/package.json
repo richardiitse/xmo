@@ -9,14 +9,22 @@
     ".": "./dist/index.js",
     "./types": "./dist/types/index.js",
     "./schema": "./dist/schema/entity.js",
-    "./utils": "./dist/utils/index.js"
+    "./utils": "./dist/utils/index.js",
+    "./adapters": "./dist/adapters/index.js"
   },
   "scripts": {
     "build": "tsc",
-    "test": "echo \"No tests yet\""
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "glob": "^10.3.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
-    "typescript": "^5.3.0"
+    "@types/glob": "^7.2.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.0.0",
+    "@vitest/coverage-v8": "^1.0.0"
   }
 }
