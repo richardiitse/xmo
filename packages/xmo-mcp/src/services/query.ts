@@ -18,6 +18,12 @@ export interface QueryResult {
 /**
  * Search for entities in the KG using grep-based keyword search.
  *
+ * NOTE: This is a breaking change from the prior embedding-based signature.
+ * Old: queryEntities(query: string, options?)
+ * New: queryEntities(keywords: string[], options?)
+ * Callers that passed a single search string need updating (e.g. loadStage3
+ * should split context into keywords first: context.split(/\s+/)).
+ *
  * Keywords are batched (20 per batch) and deduplicated across batches.
  * Results are sorted by lastSeenAt desc and limited.
  */

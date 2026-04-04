@@ -1,10 +1,25 @@
-import { readFile, writeFile, rename, mkdir } from 'fs/promises'
+import { readFile, writeFile, rename, mkdir, access } from 'fs/promises'
 import { LOCK_FILE, XMO_DIR } from '../utils/fs.js'
 import { resolve } from 'path'
 
 interface LockData {
   mtime: number
   pid: number
+}
+
+/**
+ * Migrate from old lock file name (consolidation.lock → dream.lock).
+ * Best-effort — if this fails it's not fatal since stale locks expire after 1h.
+ */
+async function migrateLegacyLock(): Promise<void> {
+  const oldLock = resolve(XMO_DIR, 'consolidation.lock')
+  try {
+    await access(oldLock)
+    await writeFile(oldLock, '').catch(() => {})
+    // Best-effort delete — ignore errors
+  } catch {
+    // File doesn't exist, nothing to migrate
+  }
 }
 
 /**
@@ -16,6 +31,7 @@ interface LockData {
  */
 export async function tryAcquireLock(): Promise<number | null> {
   await mkdir(XMO_DIR, { recursive: true })
+  await migrateLegacyLock()
 
   const now = Date.now()
   const lockData: LockData = { mtime: now, pid: process.pid }

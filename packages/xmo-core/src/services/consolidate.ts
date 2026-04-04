@@ -100,8 +100,10 @@ async function performConsolidation(
 
   for (const entity of entities) {
     // Prune stale entities (lastSeenAt older than prune threshold)
-    const lastSeen = new Date(entity.updatedAt).getTime()
-    if (lastSeen < pruneBefore) {
+    const lastSeenTs = entity.lastSeenAt
+      ? new Date(entity.lastSeenAt).getTime()
+      : new Date(entity.updatedAt).getTime()
+    if (lastSeenTs < pruneBefore) {
       continue // skip stale entity (will be pruned)
     }
 
