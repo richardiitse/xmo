@@ -1,4 +1,4 @@
-import { appendJSONL, generateEntityId, KG_FILE } from '@xmo/core'
+import { appendJSONL, generateEntityId, KG_FILE, ensureXmoDir } from '@xmo/core'
 import type { ExtractedContent, ExtractionResult } from './types.js'
 import type { Entity } from '@xmo/core'
 
@@ -6,6 +6,7 @@ export async function extractEntities(
   contents: ExtractedContent[]
 ): Promise<ExtractionResult> {
   try {
+    await ensureXmoDir()
     const entities: Entity[] = []
 
     for (const content of contents) {

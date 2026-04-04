@@ -1,5 +1,5 @@
 import { tryAcquireLock, releaseLock, readLastConsolidatedAt } from './lock.js'
-import { KG_DIR, KG_FILE, readJSONL } from '../utils/fs.js'
+import { KG_DIR, KG_FILE, readJSONL, ensureXmoDir } from '../utils/fs.js'
 import type { Entity } from '../types/index.js'
 import { writeFile, rename } from 'fs/promises'
 import { resolve } from 'path'
@@ -26,6 +26,8 @@ export interface ConsolidateResult {
 }
 
 export async function consolidate(config: ConsolidateConfig = DEFAULT_CONFIG): Promise<ConsolidateResult> {
+  await ensureXmoDir()
+
   // Gate 1: Time gate
   const lastAt = await readLastConsolidatedAt()
   const hoursSince = (Date.now() - lastAt) / 3600000

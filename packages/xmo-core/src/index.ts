@@ -4,6 +4,7 @@ export type { Entity, EntityType, Relation, RelationType, KGStore } from './type
 // Adapters
 export type { ToolAdapter, Message, SessionTranscript, ExtractedEntity } from './adapters/index.js';
 export { claudeCodeAdapter, extractFromTranscript } from './adapters/ClaudeCodeAdapter.js';
+export { openClawAdapter } from './adapters/OpenClawAdapter.js';
 
 // Schema functions
 export { createKGStore, addEntity, getEntitiesByType, getEntitiesByTag } from './schema/entity.js';
@@ -12,6 +13,8 @@ export { createKGStore, addEntity, getEntitiesByType, getEntitiesByTag } from '.
 export type { ConsolidateConfig, ConsolidateResult } from './services/consolidate.js';
 export { consolidate } from './services/consolidate.js';
 export { tryAcquireLock, releaseLock, readLastConsolidatedAt } from './services/lock.js';
+export type { SessionExtractionResult } from './services/sessionExtraction.js';
+export { extractFromAllSessions, extractFromSessions } from './services/sessionExtraction.js';
 
 // Utils
 export {

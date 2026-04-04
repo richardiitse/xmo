@@ -10,6 +10,7 @@ import { xmo_query, handleQuery } from "./tools/query.js";
 import { xmo_consolidate, handleConsolidate } from "./tools/consolidate.js";
 import { xmo_load, handleLoad } from "./tools/loader.js";
 import { xmo_stats, handleStats } from "./tools/stats.js";
+import { xmo_extract_sessions, handleExtractSessions } from "./tools/extract_sessions.js";
 
 const server = new Server(
   {
@@ -24,7 +25,7 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return { tools: [xmo_extract, xmo_query, xmo_consolidate, xmo_load, xmo_stats] };
+  return { tools: [xmo_extract, xmo_extract_sessions, xmo_query, xmo_consolidate, xmo_load, xmo_stats] };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
@@ -33,6 +34,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (name) {
     case "xmo_extract":
       return handleExtract(args);
+    case "xmo_extract_sessions":
+      return handleExtractSessions(args);
     case "xmo_query":
       return handleQuery(args);
     case "xmo_consolidate":

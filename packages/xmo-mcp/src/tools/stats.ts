@@ -22,7 +22,8 @@ export async function handleStats(_args: unknown): Promise<{ content: Array<{ ty
 
   const byTag: Record<string, number> = {}
   for (const entity of entities) {
-    for (const tag of entity.tags) {
+    const tags = entity.tags ?? []
+    for (const tag of tags) {
       byTag[tag] = (byTag[tag] || 0) + 1
     }
   }
