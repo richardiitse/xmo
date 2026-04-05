@@ -2,6 +2,10 @@ import { scanProject, generateSearchKeywords } from '@xmo/core'
 import { queryEntities } from './query.js'
 import { formatMemoryBlock } from '@xmo/core'
 
+export interface RecoverOptions {
+  limit?: number | 'all'
+}
+
 /**
  * /xmo-recover command
  *
@@ -12,8 +16,14 @@ import { formatMemoryBlock } from '@xmo/core'
  * 2. Generate search keywords from project metadata
  * 3. Query KG for relevant entities
  * 4. Format and return results
+ *
+ * @param options.limit - Number of entities to return (default: 20, use 'all' for unlimited)
  */
-export async function runRecover(): Promise<string> {
+const DEFAULT_LIMIT = 20
+const UNLIMITED = 999999
+
+export async function runRecover(options: RecoverOptions = {}): Promise<string> {
+  const limit = options.limit ?? DEFAULT_LIMIT
   const cwd = process.cwd()
 
   // Step 1: Scan project
@@ -26,8 +36,11 @@ export async function runRecover(): Promise<string> {
       'Supported project types:',
       '  - Node.js (package.json)',
       '',
-      'Usage: /xmo-recover [keyword ...]',
-      '  Or specify keywords manually: /xmo-recover typescript react',
+      `Usage: /xmo 恢复 [数量|所有]`,
+      '  Examples:',
+      '    /xmo 恢复        (default 20 records)',
+      '    /xmo 恢复 50     (50 records)',
+      '    /xmo 恢复 所有   (all matching records)',
     ].join('\n')
   }
 
@@ -38,14 +51,15 @@ export async function runRecover(): Promise<string> {
     return [
       `Project "${metadata.name}" detected but no keywords extracted.`,
       '',
-      'Usage: /xmo-recover [keyword ...]',
+      `Usage: /xmo 恢复 [数量|所有]`,
     ].join('\n')
   }
 
   // Step 3: Query KG
   let entities
+  const queryLimit = limit === 'all' ? UNLIMITED : limit
   try {
-    entities = await queryEntities(keywords, 20)
+    entities = await queryEntities(keywords, queryLimit)
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : String(error)
     return `Query failed: ${msg}`
@@ -58,17 +72,19 @@ export async function runRecover(): Promise<string> {
       `Detected tech stack: ${metadata.techStack.join(', ') || 'none'}`,
       '',
       'Try running /xmo-extract to populate memory first.',
-      'Or specify keywords manually: /xmo-recover <keyword> ...',
+      `Usage: /xmo 恢复 [数量|所有]`,
     ].join('\n')
   }
 
   // Step 4: Format results
-  const block = formatMemoryBlock(entities, metadata.name, { maxEntities: 20 })
+  const displayLimit = limit === 'all' ? entities.length : limit
+  const block = formatMemoryBlock(entities, metadata.name, { maxEntities: displayLimit })
 
   const header = [
     `Project: ${metadata.name}`,
     `Tech stack: ${metadata.techStack.join(', ') || 'none'}`,
     `Searched: ${keywords.slice(0, 5).join(', ')}${keywords.length > 5 ? '...' : ''}`,
+    `Showing: ${Math.min(entities.length, displayLimit)} of ${entities.length} records`,
     '',
   ].join('\n')
 

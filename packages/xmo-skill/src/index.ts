@@ -1,7 +1,7 @@
 import { runExtract } from './commands/extract.js'
 import { runQuery } from './commands/query.js'
 import { runDream, runStats } from './commands/dream.js'
-import { runRecover } from './commands/recover.js'
+import { runRecover, type RecoverOptions } from './commands/recover.js'
 
 export const SKILL_NAME = 'xmo'
 
@@ -26,8 +26,9 @@ export async function handleXmoCommand(args: string): Promise<string> {
       return runDream()
     case 'stats':
       return runStats()
-    case 'recover':
-      return runRecover()
+    case 'recover': {
+      return runRecover(parseRecoverArgs(rest))
+    }
     case 'extract':
       return runExtract()
     case 'query':
@@ -47,8 +48,27 @@ XMO - Extended Memory Optimization
 /xmo-query <keyword> [<keyword>...] - Search memory
 /xmo-dream - Trigger consolidation
 /xmo-stats - View statistics
-/xmo-recover - Load memory into context
+/xmo-recover [数量|所有] - Load memory into context (default 20)
+/xmo 恢复50条 - Load 50 records
+/xmo 恢复所有 - Load all matching records
 `
+}
+
+function parseRecoverArgs(args: string[]): RecoverOptions {
+  const firstArg = args[0] ?? ''
+
+  if (firstArg === '所有') {
+    return { limit: 'all' }
+  }
+
+  if (firstArg) {
+    const match = firstArg.match(/^(\d+)(条)?$/)
+    if (match) {
+      return { limit: parseInt(match[1], 10) }
+    }
+  }
+
+  return {}
 }
 
 function getStatus(): string {

@@ -77,12 +77,14 @@ pnpm build
 After installation, Claude Code can use:
 
 ```bash
-/xmo          # Show status overview
-/xmo-extract  # Extract entities from current session
-/xmo-query    # Search memory
-/xmo-dream    # Trigger consolidation
-/xmo-stats    # View statistics
-/xmo-recover  # Load relevant memories based on current project
+/xmo            # Show status overview
+/xmo-extract    # Extract entities from current session
+/xmo-query      # Search memory
+/xmo-dream      # Trigger consolidation
+/xmo-stats      # View statistics
+/xmo-recover    # Load relevant memories (default 20 records)
+/xmo Load 50   # Load 50 records
+/xmo load all   # Load all matching records
 ```
 
 ## OpenClaw Configuration

@@ -77,10 +77,14 @@ pnpm build
 安装后，Claude Code 可使用以下命令：
 
 ```bash
-/xmo-extract  # 从当前会话提取实体
-/xmo-query    # 搜索记忆
-/xmo-dream    # 触发整合
-/xmo-stats    # 查看统计
+/xmo            # 显示状态概览
+/xmo-extract    # 从当前会话提取实体
+/xmo-query      # 搜索记忆
+/xmo-dream      # 触发整合
+/xmo-stats      # 查看统计
+/xmo-recover    # 加载记忆（默认 20 条）
+/xmo 恢复50条   # 加载 50 条记录
+/xmo 恢复所有   # 加载所有匹配记录
 ```
 
 ## OpenClaw 配置
@@ -106,10 +110,7 @@ openclaw mcp list
 | 工作空间 | 路径 | 状态 |
 |---------|------|------|
 | main | `~/.openclaw/workspace/MEMORY.md` | 已存在 |
-| altas | `~/.openclaw/workspace-altas/MEMORY.md` | 已存在 |
-| scribe | `~/.openclaw/workspace-scribe/MEMORY.md` | 已创建 |
-| tutor | `~/.openclaw/workspace-tutor/MEMORY.md` | 已创建 |
-| aslan | `~/.openclaw/workspace-aslan/MEMORY.md` | 已创建 |
+
 
 #### MEMORY.md 模板
 
