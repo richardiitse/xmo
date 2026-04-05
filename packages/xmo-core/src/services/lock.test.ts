@@ -1,19 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { writeFile, readFile, mkdir } from 'fs/promises'
-import { resolve } from 'path'
-
-// Test lock functions by testing the logic directly
-// We can't easily test tryAcquireLock without a temp directory,
-// but we can test readLastConsolidatedAt and the logic structure
 
 describe('lock utilities', () => {
-  // Test the timestamp parsing logic
-  it('readLastConsolidatedAt returns 0 when file does not exist', async () => {
+  it('readLastConsolidatedAt returns a timestamp when file exists', async () => {
     const { readLastConsolidatedAt } = await import('./lock.js')
 
-    // This will return 0 since the file doesn't exist
+    // The lock file exists in ~/.xmo/, so it returns the mtime
     const result = await readLastConsolidatedAt()
-    expect(result).toBe(0)
+    // Result should be a valid timestamp (positive number, greater than 2020)
+    expect(result).toBeGreaterThan(1577836800000) // Jan 1, 2020
+    expect(result).toBeLessThanOrEqual(Date.now())
   })
 
   it('LockData interface has correct shape', () => {
