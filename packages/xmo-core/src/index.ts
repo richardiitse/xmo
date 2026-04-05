@@ -30,3 +30,7 @@ export {
 export { generateId, generateEntityId } from './utils/uuid.js';
 
 export { sanitizeKeyword } from './utils/sanitize.js';
+
+export { scanProject, generateSearchKeywords } from './utils/project.js';
+
+export { formatMemoryBlock } from './utils/formatter.js';

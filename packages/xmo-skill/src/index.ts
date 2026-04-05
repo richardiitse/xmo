@@ -1,6 +1,7 @@
 import { runExtract } from './commands/extract.js'
 import { runQuery } from './commands/query.js'
 import { runDream, runStats } from './commands/dream.js'
+import { runRecover } from './commands/recover.js'
 
 export const SKILL_NAME = 'xmo'
 
@@ -26,7 +27,7 @@ export async function handleXmoCommand(args: string): Promise<string> {
     case 'stats':
       return runStats()
     case 'recover':
-      return 'Use /xmo-recover to load memory into context'
+      return runRecover()
     case 'extract':
       return runExtract()
     case 'query':
