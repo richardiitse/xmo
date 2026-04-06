@@ -42,14 +42,14 @@ describe('codexAdapter', () => {
   }
 
   describe('parseSession', () => {
-    it('should parse valid Codex JSONL and ignore developer messages', async () => {
+    it('should parse valid Codex JSONL and map developer messages to system role', async () => {
       const tmpFile = await createTestFile('rollout-test-session.jsonl', sampleSessionJsonl)
 
       const result = await codexAdapter.parseSession(tmpFile)
 
       expect(result.sessionId).toBe('019d6253-7b53-75c2-93aa-9d374024eae7')
       expect(result.startedAt).toBe('2026-04-06T10:25:31.477Z')
-      expect(result.messages.some(message => message.content.includes('internal instructions'))).toBe(false)
+      expect(result.messages.some(message => message.role === 'system' && message.content.includes('internal instructions'))).toBe(true)
       expect(result.messages.some(message => message.role === 'user')).toBe(true)
       expect(result.messages.some(message => message.content.includes('[tool:exec_command]'))).toBe(true)
       expect(result.messages.some(message => message.role === 'tool' && message.content === 'tests passed')).toBe(true)
@@ -68,6 +68,24 @@ invalid json line
 
       expect(result.sessionId).toBe('codex-session')
       expect(result.messages).toHaveLength(1)
+
+      await cleanupTestDir()
+    })
+
+    it('should filter out unknown roles by mapping them to null', async () => {
+      // Unknown role values should be skipped (normalizeCodexRole returns null)
+      const content = `{"timestamp":"2026-04-06T10:25:31.477Z","type":"session_meta","payload":{"id":"codex-session","timestamp":"2026-04-06T10:25:31.477Z"}}
+{"timestamp":"2026-04-06T10:25:32.000Z","type":"response_item","payload":{"type":"message","role":"unknown_role","content":[{"type":"output_text","text":"should be filtered"}]}}
+{"timestamp":"2026-04-06T10:25:33.000Z","type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"valid message"}]}}
+`
+      const tmpFile = await createTestFile('rollout-unknown-role.jsonl', content)
+
+      const result = await codexAdapter.parseSession(tmpFile)
+
+      // Unknown role should be filtered out; only assistant message remains
+      expect(result.messages).toHaveLength(1)
+      expect(result.messages[0].content).toBe('valid message')
+      expect(result.messages[0].role).toBe('assistant')
 
       await cleanupTestDir()
     })

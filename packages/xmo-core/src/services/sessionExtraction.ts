@@ -27,8 +27,9 @@ export async function extractFromAllSessions(): Promise<SessionExtractionResult>
 
   for (const adapter of allAdapters) {
     try {
-      const findSessions = adapter.findSessions?.bind(adapter) ?? (async () => [])
-      const sessions = await findSessions()
+      const sessions = adapter.findSessions
+        ? await adapter.findSessions()
+        : []
       for (const sessionPath of sessions) {
         try {
           const transcript = await adapter.parseSession(sessionPath)
@@ -99,8 +100,9 @@ export async function extractFromSessions(adapterName: AdapterName): Promise<Ses
   }
 
   try {
-    const findSessions = adapter.findSessions?.bind(adapter) ?? (async () => [])
-    const sessions = await findSessions()
+    const sessions = adapter.findSessions
+      ? await adapter.findSessions()
+      : []
     for (const sessionPath of sessions) {
       try {
         const transcript = await adapter.parseSession(sessionPath)

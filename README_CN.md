@@ -17,7 +17,7 @@ XMO 使用可插拔适配器从会话记录中提取实体：
 
 | 来源 | 位置 | 适配器 |
 |------|------|--------|
-| Claude Code | `~/.claude/sessions/*/transcript.json` | 内置 |
+| Claude Code | `~/.claude/projects/<encoded-path>/<session-uuid>.jsonl` | 内置 |
 | Codex | `~/.codex/sessions/**/*.jsonl` | 内置 |
 | OpenClaw | `~/.openclaw/agents/*/sessions/*.jsonl` | 内置 |
 

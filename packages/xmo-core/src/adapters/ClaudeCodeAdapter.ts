@@ -1,70 +1,124 @@
 import { readFile } from 'fs/promises'
 import { glob } from 'glob'
 import { stat } from 'fs/promises'
-import { resolve, dirname } from 'path'
+import { resolve, basename } from 'path'
 import type { ToolAdapter, SessionTranscript, Message } from './ToolAdapter.js'
 
 /**
  * Claude Code session transcript adapter.
  *
  * Claude Code stores transcripts at:
- *   ~/.claude/sessions/<session-id>/transcript.json
+ *   ~/.claude/projects/<encoded-project-path>/<session-uuid>.jsonl
+ *
+ * Each line is a JSON entry with types: user, assistant, system,
+ * file-history-snapshot, last-prompt, etc.
+ * message.content can be a string or array of content blocks.
  */
 export const claudeCodeAdapter: ToolAdapter = {
   name: 'claude-code',
 
   sessionGlobs: [
-    resolve(process.env.HOME!, '.claude/sessions/*/transcript.json'),
+    resolve(process.env.HOME ?? '', '.claude/projects/**/*.jsonl'),
   ],
 
   async parseSession(filePath: string): Promise<SessionTranscript> {
     const content = await readFile(filePath, 'utf-8')
-    const data = JSON.parse(content) as {
-      sessionId?: string
-      messages?: Array<{
-        role?: string
-        type?: string
-        content?: string
-        timestamp?: string
-        speaker?: string
-      }>
-      startedAt?: string
-      endedAt?: string
+    const lines = content.split('\n').filter(line => line.trim())
+
+    const messages: Message[] = []
+    let sessionId = 'unknown'
+    let startedAt = new Date(0).toISOString()
+    let endedAt: string | undefined
+
+    for (const line of lines) {
+      let entry: Record<string, unknown>
+      try {
+        entry = JSON.parse(line) as Record<string, unknown>
+      } catch {
+        continue
+      }
+
+      const type = entry.type as string | undefined
+
+      // Extract session ID from any entry that has it
+      if (typeof entry.sessionId === 'string' && sessionId === 'unknown') {
+        sessionId = entry.sessionId
+      }
+
+      // Only process user and assistant entries
+      if (type !== 'user' && type !== 'assistant') continue
+
+      const msg = entry.message as Record<string, unknown> | undefined
+      if (!msg) continue
+
+      const role = msg.role as string | undefined
+      if (role !== 'user' && role !== 'assistant') continue
+
+      const text = extractText(msg.content)
+      if (!text) continue
+
+      const timestamp = (entry.timestamp ?? msg.timestamp) as string | undefined
+      if (timestamp && startedAt === new Date(0).toISOString()) {
+        startedAt = timestamp
+      }
+      if (timestamp) {
+        endedAt = timestamp
+      }
+
+      messages.push({
+        role: role as Message['role'],
+        content: text,
+        timestamp,
+      })
     }
 
-    const messages: Message[] = (data.messages ?? []).map(msg => ({
-      role: (msg.role ?? msg.speaker ?? 'unknown') as Message['role'],
-      content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
-      timestamp: msg.timestamp,
-    }))
-
-    return {
-      sessionId: data.sessionId ?? (() => {
-        const match = filePath.match(/\.claude\/sessions\/([^/]+)/)
-        return match ? match[1] : 'unknown'
-      })(),
-      messages,
-      startedAt: data.startedAt ?? new Date(0).toISOString(),
-      endedAt: data.endedAt,
+    // Derive sessionId from filename if not found in entries
+    if (sessionId === 'unknown') {
+      const name = basename(filePath, '.jsonl')
+      sessionId = name
     }
+
+    return { sessionId, messages, startedAt, endedAt }
   },
 
-  async getLastModified(sessionDir: string): Promise<Date> {
-    const st = await stat(sessionDir)
+  async getLastModified(filePath: string): Promise<Date> {
+    const st = await stat(filePath)
     return st.mtime
   },
 
-  /**
-   * Find all Claude Code session transcript paths.
-   */
+  // Find all Claude Code session transcript paths.
+  // Excludes subagent transcripts (under subagents/ directories).
   async findSessions(): Promise<string[]> {
     const paths: string[] = []
     for (const pattern of this.sessionGlobs) {
       const matches = await glob(pattern)
-      paths.push(...matches)
+      // Exclude subagent transcripts — subagent sessions live under a /subagents/ directory segment
+      const filtered = matches.filter(p => !/\/subagents\//.test(p))
+      paths.push(...filtered)
     }
     return paths
   },
+}
+
+/**
+ * Extract text from message content which can be:
+ * - a string
+ * - an array of content blocks [{type: "text", text: "..."}, {type: "thinking"}, ...]
+ */
+function extractText(content: unknown): string {
+  if (typeof content === 'string') {
+    return content
+  }
+  if (Array.isArray(content)) {
+    return content
+      .filter((block): block is Record<string, unknown> =>
+        typeof block === 'object' && block !== null && (block as Record<string, unknown>).type === 'text'
+      )
+      .map(block => block.text as string)
+      .filter(Boolean)
+      .join('\n')
+  }
+  return ''
 }
 
 /**

@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest'
-import { extractFromTranscript } from './ClaudeCodeAdapter.js'
+import { describe, it, expect, beforeAll, afterAll } from 'vitest'
+import { readFile, writeFile, mkdir, rm } from 'fs/promises'
+import { join } from 'path'
+import { tmpdir } from 'os'
+import { extractFromTranscript, claudeCodeAdapter } from './ClaudeCodeAdapter.js'
 import type { SessionTranscript } from './ToolAdapter.js'
 
 function createTranscript(overrides: Partial<SessionTranscript> = {}): SessionTranscript {
@@ -19,7 +22,101 @@ function createMessage(overrides: { role?: 'user' | 'assistant' | 'system' | 'to
   }
 }
 
+const sampleJsonl = `{"timestamp":"2026-04-06T10:00:00.000Z","type":"user","sessionId":"session-abc","message":{"role":"user","content":"Hello"}}
+{"timestamp":"2026-04-06T10:00:01.000Z","type":"assistant","sessionId":"session-abc","message":{"role":"assistant","content":"Hi there!"}}
+{"timestamp":"2026-04-06T10:00:02.000Z","type":"assistant","sessionId":"session-abc","message":{"role":"assistant","content":[{"type":"thinking","text":"thinking..."},{"type":"text","text":"Using TypeScript"}]}}
+{"timestamp":"2026-04-06T10:00:03.000Z","type":"user","sessionId":"session-abc","message":{"role":"user","content":"Check https://example.com"}}
+`
+
 describe('ClaudeCodeAdapter', () => {
+  let tmpDir: string
+  beforeAll(async () => {
+    tmpDir = join(tmpdir(), `xmo-cc-test-${Date.now()}`)
+    await mkdir(tmpDir, { recursive: true })
+  })
+  afterAll(async () => {
+    await rm(tmpDir, { recursive: true, force: true })
+  })
+
+  describe('parseSession', () => {
+    it('parses valid JSONL and extracts user/assistant messages', async () => {
+      const filePath = join(tmpDir, 'session-abc.jsonl')
+      await writeFile(filePath, sampleJsonl)
+
+      const result = await claudeCodeAdapter.parseSession(filePath)
+
+      expect(result.sessionId).toBe('session-abc')
+      expect(result.startedAt).toBe('2026-04-06T10:00:00.000Z')
+      expect(result.endedAt).toBe('2026-04-06T10:00:03.000Z')
+      expect(result.messages).toHaveLength(4)
+      expect(result.messages[0]).toMatchObject({ role: 'user', content: 'Hello' })
+      expect(result.messages[1]).toMatchObject({ role: 'assistant', content: 'Hi there!' })
+    })
+
+    it('filters thinking blocks and extracts only text blocks from content arrays', async () => {
+      const filePath = join(tmpDir, 'session-thinking.jsonl')
+      await writeFile(filePath, sampleJsonl)
+
+      const result = await claudeCodeAdapter.parseSession(filePath)
+
+      // Third message has content array with thinking + text blocks
+      // Should only have "Using TypeScript" not "thinking..."
+      const thirdMsg = result.messages[2]
+      expect(thirdMsg.content).toBe('Using TypeScript')
+      expect(thirdMsg.content).not.toContain('thinking')
+    })
+
+    it('extracts URLs from user message content', async () => {
+      const filePath = join(tmpDir, 'session-urls.jsonl')
+      await writeFile(filePath, sampleJsonl)
+
+      const result = await claudeCodeAdapter.parseSession(filePath)
+
+      // Fourth message: "Check https://example.com"
+      const urlMsg = result.messages[3]
+      expect(urlMsg.content).toBe('Check https://example.com')
+    })
+
+    it('derives sessionId from filename when not in entries', async () => {
+      const filePath = join(tmpDir, 'no-session-id-here.jsonl')
+      const content = `{"timestamp":"2026-04-06T10:00:00.000Z","type":"user","message":{"role":"user","content":"Hello"}}
+`
+      await writeFile(filePath, content)
+
+      const result = await claudeCodeAdapter.parseSession(filePath)
+
+      expect(result.sessionId).toBe('no-session-id-here')
+    })
+
+    it('skips malformed JSON lines without crashing', async () => {
+      const filePath = join(tmpDir, 'session-malformed.jsonl')
+      const content = `{"timestamp":"2026-04-06T10:00:00.000Z","type":"user","message":{"role":"user","content":"valid"}}
+not json at all
+{"timestamp":"2026-04-06T10:00:01.000Z","type":"assistant","message":{"role":"assistant","content":"also valid"}}
+`
+      await writeFile(filePath, content)
+
+      const result = await claudeCodeAdapter.parseSession(filePath)
+
+      expect(result.messages).toHaveLength(2)
+      expect(result.messages[0].content).toBe('valid')
+      expect(result.messages[1].content).toBe('also valid')
+    })
+
+    it('skips entries with non-string non-array content', async () => {
+      const filePath = join(tmpDir, 'session-weird-content.jsonl')
+      const content = `{"timestamp":"2026-04-06T10:00:00.000Z","type":"assistant","message":{"role":"assistant","content":null}}
+{"timestamp":"2026-04-06T10:00:01.000Z","type":"assistant","message":{"role":"assistant","content":"actual content"}}
+`
+      await writeFile(filePath, content)
+
+      const result = await claudeCodeAdapter.parseSession(filePath)
+
+      expect(result.messages).toHaveLength(1)
+      expect(result.messages[0].content).toBe('actual content')
+    })
+  })
+
   describe('extractFromTranscript', () => {
     it('extracts URLs from content', () => {
       const transcript = createTranscript({

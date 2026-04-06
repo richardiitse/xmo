@@ -141,6 +141,7 @@ function normalizeCodexRole(role?: string): Message['role'] | null {
       return 'tool'
     case 'system':
     case 'developer':
+      return 'system'
     default:
       return null
   }
