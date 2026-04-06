@@ -2,13 +2,13 @@ import { extractFromAllSessions, extractFromSessions } from '@xmo/core'
 
 export const xmo_extract_sessions = {
   name: 'xmo_extract_sessions',
-  description: 'Automatically extract entities from all session transcripts (Claude Code and OpenClaw)',
+  description: 'Automatically extract entities from Claude Code, Codex, and OpenClaw session transcripts',
   inputSchema: {
     type: 'object',
     properties: {
       adapter: {
         type: 'string',
-        enum: ['all', 'claude-code', 'openclaw'],
+        enum: ['all', 'claude-code', 'codex', 'openclaw'],
         default: 'all',
         description: 'Which adapter to extract from',
       },
@@ -17,7 +17,7 @@ export const xmo_extract_sessions = {
 }
 
 export async function handleExtractSessions(args: unknown): Promise<{ content: Array<{ type: 'text'; text: string }> }> {
-  const params = args as { adapter?: 'all' | 'claude-code' | 'openclaw' }
+  const params = args as { adapter?: 'all' | 'claude-code' | 'codex' | 'openclaw' }
   const adapter = params.adapter ?? 'all'
 
   const result = adapter === 'all'

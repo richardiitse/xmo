@@ -1,4 +1,4 @@
-import { resolve } from 'path';
+import { dirname, resolve } from 'path';
 import { mkdir, readFile, writeFile, access } from 'fs/promises';
 
 // Directory paths
@@ -57,6 +57,7 @@ export async function appendJSONL(
   filePath: string,
   data: unknown
 ): Promise<void> {
+  await mkdir(dirname(filePath), { recursive: true });
   const line = JSON.stringify(data) + '\n';
   await writeFile(filePath, line, { flag: 'a' });
 }

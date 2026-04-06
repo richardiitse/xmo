@@ -1,15 +1,15 @@
 # XMO - 扩展记忆优化
 
-面向 Claude Code 和 OpenClaw 的完整记忆管理系统，灵感来自 Kairos 架构模式。
+面向 Claude Code、Codex 和 OpenClaw 的完整记忆管理系统，灵感来自 Kairos 架构模式。
 
 ## 功能特性
 
 - **自动提取**：从对话中提取关键决策、发现和经验教训
-- **OpenClaw 会话自动提取**：自动从 OpenClaw 会话历史中提取实体
+- **多智能体会话自动提取**：自动从 Claude Code、Codex 和 OpenClaw 会话历史中提取实体
 - **梦境整合**：三重门机制的后台记忆整合
 - **主动加载**：启动时分阶段记忆恢复
 - **语义查询**：基于关键词的 grep 搜索
-- **跨平台共享**：Claude Code 和 OpenClaw 之间的记忆共享
+- **跨平台共享**：Claude Code、Codex 和 OpenClaw 之间的记忆共享
 
 ## 会话来源
 
@@ -18,15 +18,16 @@ XMO 使用可插拔适配器从会话记录中提取实体：
 | 来源 | 位置 | 适配器 |
 |------|------|--------|
 | Claude Code | `~/.claude/sessions/*/transcript.json` | 内置 |
+| Codex | `~/.codex/sessions/**/*.jsonl` | 内置 |
 | OpenClaw | `~/.openclaw/agents/*/sessions/*.jsonl` | 内置 |
 
 两种适配器都实现了 `ToolAdapter` 接口，提供统一的实体提取。
 
-### OpenClaw 会话自动提取
+### 多智能体会话自动提取
 
-XMO 可自动从 OpenClaw 会话历史中提取实体：
+XMO 可自动从受支持的会话历史中提取实体：
 
-- **全量提取**：按需从所有 OpenClaw 会话中提取实体
+- **全量提取**：按需从 Claude Code、Codex 和 OpenClaw 会话中提取实体
 - **定时调度**：通过 cron 作业每小时自动提取
 - **去重机制**：跟踪上次提取时间，避免重复处理
 
@@ -40,8 +41,11 @@ XMO 可自动从 OpenClaw 会话历史中提取实体：
 #### 手动提取
 
 ```bash
-# 运行全量提取
+# 运行所有适配器的全量提取
 node scripts/xmo-cron-extract.mjs
+
+# 按适配器提取
+node scripts/xmo-cron-extract.mjs codex
 
 # 或通过 MCP 工具：xmo_extract_sessions
 ```
@@ -55,13 +59,15 @@ XMO 是一个包含三个包的单体仓库：
 - **xmo-skill**：用户交互命令的技能包
 
 ```
-Claude Code                          OpenClaw
-    │                                    │
-    ▼                                    ▼
-/xmo-extract ──────► @xmo/core ◄───── xmo-mcp (通过 MCP stdio)
-                           │
-                           ▼
-                    ~/.xmo/kg/entities.jsonl  ◄── 共享存储
+Claude Code        Codex        OpenClaw
+    │               │              │
+    ▼               ▼              ▼
+/xmo-extract     AGENTS.md      xmo-mcp (通过 MCP stdio)
+        \           │           /
+         └─────► @xmo/core ◄───┘
+                     │
+                     ▼
+              ~/.xmo/kg/entities.jsonl
 ```
 
 ## 安装
@@ -72,20 +78,23 @@ pnpm install
 pnpm build
 ```
 
-## Claude Code 技能
+## 智能体使用方式
 
 安装后，Claude Code 可使用以下命令：
 
 ```bash
 /xmo            # 显示状态概览
-/xmo-extract    # 从当前会话提取实体
+/xmo-extract    # 从最新的受支持会话提取实体
 /xmo-query      # 搜索记忆
 /xmo-dream      # 触发整合
 /xmo-stats      # 查看统计
 /xmo-recover    # 加载记忆（默认 20 条）
 /xmo 恢复50条   # 加载 50 条记录
 /xmo 恢复所有   # 加载所有匹配记录
+/xmo extract codex  # 从 Codex 会话历史中提取
 ```
+
+Codex 会自动读取仓库根目录的 `AGENTS.md`。应保持它与 `SKILL.md` 的约定一致，让 Codex 在处理历史问题或架构问题前先查询 XMO，并把稳定决策回写到共享 KG。
 
 ## OpenClaw 配置
 
@@ -120,7 +129,7 @@ openclaw mcp list
 ## XMO 记忆系统（跨平台共享）
 
 - **位置**：`~/.xmo/kg/entities.jsonl`
-- **用途**：Claude Code 和 OpenClaw 之间共享的长期记忆
+- **用途**：Claude Code、Codex 和 OpenClaw 之间共享的长期记忆
 - **MCP 工具**：xmo_query, xmo_extract, xmo_consolidate, xmo_stats
 - **使用时机**：回答有关项目历史、决策或技术细节的问题时，使用 `xmo_query` 搜索相关记忆
 ```
@@ -130,7 +139,7 @@ openclaw mcp list
 | 工具 | 描述 |
 |------|------|
 | `xmo_extract` | 提取关键信息到记忆 |
-| `xmo_extract_sessions` | 从 OpenClaw 会话历史中提取实体 |
+| `xmo_extract_sessions` | 从 Claude Code、Codex 和 OpenClaw 会话历史中提取实体 |
 | `xmo_query` | 使用关键词搜索记忆 |
 | `xmo_consolidate` | 触发记忆整合 |
 | `xmo_load` | 将记忆加载到上下文 |
@@ -149,7 +158,7 @@ openclaw mcp list
 xmo/
 ├── packages/
 │   ├── xmo-core/           # 共享库
-│   │   └── src/adapters/   # 会话适配器（ClaudeCode, OpenClaw）
+│   │   └── src/adapters/   # 会话适配器（Claude Code, Codex, OpenClaw）
 │   ├── xmo-mcp/            # MCP 服务器
 │   │   └── src/tools/      # MCP 工具
 │   └── xmo-skill/          # 技能包

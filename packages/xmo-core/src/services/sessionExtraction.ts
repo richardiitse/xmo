@@ -1,10 +1,8 @@
-import { claudeCodeAdapter, openClawAdapter, extractFromTranscript } from '../adapters/index.js'
+import { allAdapters, extractFromTranscript, getAdapterByName } from '../adapters/index.js'
 import { KG_FILE, appendJSONL, ensureXmoDir } from '../utils/fs.js'
 import { generateEntityId } from '../utils/uuid.js'
 import type { Entity, EntityType } from '../types/index.js'
-import type { ToolAdapter } from '../adapters/ToolAdapter.js'
-
-const ALL_ADAPTERS: ToolAdapter[] = [claudeCodeAdapter, openClawAdapter]
+import type { AdapterName } from '../adapters/index.js'
 
 export interface SessionExtractionResult {
   success: boolean
@@ -27,7 +25,7 @@ export async function extractFromAllSessions(): Promise<SessionExtractionResult>
     errors: [],
   }
 
-  for (const adapter of ALL_ADAPTERS) {
+  for (const adapter of allAdapters) {
     try {
       const findSessions = adapter.findSessions?.bind(adapter) ?? (async () => [])
       const sessions = await findSessions()
@@ -80,10 +78,10 @@ export async function extractFromAllSessions(): Promise<SessionExtractionResult>
 /**
  * Extract entities from sessions for a specific adapter only.
  */
-export async function extractFromSessions(adapterName: 'claude-code' | 'openclaw'): Promise<SessionExtractionResult> {
+export async function extractFromSessions(adapterName: AdapterName): Promise<SessionExtractionResult> {
   await ensureXmoDir()
 
-  const adapter = ALL_ADAPTERS.find(a => a.name === adapterName)
+  const adapter = getAdapterByName(adapterName)
   if (!adapter) {
     return {
       success: false,

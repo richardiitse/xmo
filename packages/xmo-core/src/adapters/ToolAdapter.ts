@@ -20,7 +20,7 @@ export interface SessionTranscript {
 
 export interface ToolAdapter {
   /** Unique name of the tool */
-  name: 'claude-code' | 'openclaw' | string
+  name: 'claude-code' | 'codex' | 'openclaw' | string
 
   /** Glob patterns to find session transcript files */
   sessionGlobs: string[]

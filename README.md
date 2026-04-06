@@ -1,15 +1,15 @@
 # XMO - Extended Memory Optimization
 
-A complete memory management system for Claude Code and OpenClaw, inspired by Kairos architecture patterns.
+A complete memory management system for Claude Code, Codex, and OpenClaw, inspired by Kairos architecture patterns.
 
 ## Features
 
 - **Automatic Extraction**: Extract key decisions, findings, and lessons from conversations
-- **OpenClaw Session Auto-Extraction**: Automatically extract entities from OpenClaw session history
+- **Multi-Agent Session Auto-Extraction**: Automatically extract entities from Claude Code, Codex, and OpenClaw session history
 - **Dream Consolidation**: Background memory consolidation with triple-gate mechanism
 - **Proactive Loading**: Staged memory recovery at startup
 - **Semantic Query**: Search memory using keyword-based grep search
-- **Cross-Platform Sharing**: Memory shared between Claude Code and OpenClaw
+- **Cross-Platform Sharing**: Memory shared between Claude Code, Codex, and OpenClaw
 
 ## Session Sources
 
@@ -18,15 +18,16 @@ XMO extracts entities from session transcripts using swappable adapters:
 | Source | Location | Adapter |
 |--------|----------|---------|
 | Claude Code | `~/.claude/sessions/*/transcript.json` | Built-in |
+| Codex | `~/.codex/sessions/**/*.jsonl` | Built-in |
 | OpenClaw | `~/.openclaw/agents/*/sessions/*.jsonl` | Built-in |
 
 Both adapters implement the `ToolAdapter` interface for unified entity extraction.
 
-### OpenClaw Session Auto-Extraction
+### Multi-Agent Session Auto-Extraction
 
-XMO can automatically extract entities from OpenClaw session history:
+XMO can automatically extract entities from supported session history:
 
-- **Full Extraction**: Extract entities from all OpenClaw sessions on demand
+- **Full Extraction**: Extract entities from Claude Code, Codex, and OpenClaw sessions on demand
 - **Cron Scheduling**: Hourly automatic extraction via cron job
 - **Duplicate Avoidance**: Tracks last extraction time to avoid re-processing
 
@@ -40,8 +41,11 @@ XMO can automatically extract entities from OpenClaw session history:
 #### Manual Extraction
 
 ```bash
-# Run full extraction
+# Run full extraction from all adapters
 node scripts/xmo-cron-extract.mjs
+
+# Extract from one adapter
+node scripts/xmo-cron-extract.mjs codex
 
 # Or via MCP tool: xmo_extract_sessions
 ```
@@ -55,13 +59,15 @@ XMO is a monorepo with three packages:
 - **xmo-skill**: Skill package for user interaction commands
 
 ```
-Claude Code                          OpenClaw
-    │                                    │
-    ▼                                    ▼
-/xmo-extract ──────► @xmo/core ◄───── xmo-mcp (via MCP stdio)
-                           │
-                           ▼
-                    ~/.xmo/kg/entities.jsonl  ◄── Shared Storage
+Claude Code       Codex       OpenClaw
+    │              │             │
+    ▼              ▼             ▼
+/xmo-extract    AGENTS.md     xmo-mcp (via MCP stdio)
+        \          │          /
+         └────► @xmo/core ◄──┘
+                    │
+                    ▼
+             ~/.xmo/kg/entities.jsonl
 ```
 
 ## Installation
@@ -72,20 +78,23 @@ pnpm install
 pnpm build
 ```
 
-## Claude Code Skill
+## Agent Usage
 
 After installation, Claude Code can use:
 
 ```bash
 /xmo            # Show status overview
-/xmo-extract    # Extract entities from current session
+/xmo-extract    # Extract entities from the newest supported session
 /xmo-query      # Search memory
 /xmo-dream      # Trigger consolidation
 /xmo-stats      # View statistics
 /xmo-recover    # Load relevant memories (default 20 records)
 /xmo Load 50   # Load 50 records
 /xmo load all   # Load all matching records
+/xmo extract codex  # Extract from Codex session history
 ```
+
+Codex reads repository guidance from `AGENTS.md`. Keep that file aligned with `SKILL.md` so Codex queries XMO before historical or architectural work and saves durable decisions back to the shared KG.
 
 ## OpenClaw Configuration
 
@@ -123,7 +132,7 @@ Add this section to each workspace's MEMORY.md:
 ## XMO Memory System (Cross-Platform Shared)
 
 - **Location**: `~/.xmo/kg/entities.jsonl`
-- **Purpose**: Long-term memory shared between Claude Code and OpenClaw
+- **Purpose**: Long-term memory shared between Claude Code, Codex, and OpenClaw
 - **MCP Tools**: xmo_query, xmo_extract, xmo_consolidate, xmo_stats
 - **When to use**: When answering questions about project history, decisions, or technical details, use `xmo_query` to search relevant memories
 ```
@@ -133,7 +142,7 @@ Add this section to each workspace's MEMORY.md:
 | Tool | Description |
 |------|-------------|
 | `xmo_extract` | Extract key information to memory |
-| `xmo_extract_sessions` | Extract entities from OpenClaw session history |
+| `xmo_extract_sessions` | Extract entities from Claude Code, Codex, and OpenClaw session history |
 | `xmo_query` | Search memory using keywords |
 | `xmo_consolidate` | Trigger memory consolidation |
 | `xmo_load` | Load memory into context |
@@ -152,7 +161,7 @@ Add this section to each workspace's MEMORY.md:
 xmo/
 ├── packages/
 │   ├── xmo-core/           # Shared library
-│   │   └── src/adapters/   # Session adapters (ClaudeCode, OpenClaw)
+│   │   └── src/adapters/   # Session adapters (Claude Code, Codex, OpenClaw)
 │   ├── xmo-mcp/            # MCP Server
 │   │   └── src/tools/      # MCP tools
 │   └── xmo-skill/          # Skill Package

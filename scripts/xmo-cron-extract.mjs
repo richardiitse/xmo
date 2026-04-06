@@ -2,7 +2,7 @@
 /**
  * XMO Session Extraction Cron Script
  *
- * This script extracts entities from all session transcripts (Claude Code and OpenClaw).
+ * This script extracts entities from all session transcripts (Claude Code, Codex, and OpenClaw).
  * Designed to be run via cron for periodic memory consolidation.
  *
  * Usage:
@@ -11,6 +11,7 @@
  *
  * Examples:
  *   node scripts/xmo-cron-extract.mjs           # Extract from all adapters
+ *   node scripts/xmo-cron-extract.mjs codex     # Extract from Codex only
  *   node scripts/xmo-cron-extract.mjs openclaw  # Extract from OpenClaw only
  */
 

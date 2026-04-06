@@ -1,3 +1,6 @@
 export type { ToolAdapter, Message, SessionTranscript, ExtractedEntity } from './ToolAdapter.js'
 export { claudeCodeAdapter, extractFromTranscript } from './ClaudeCodeAdapter.js'
+export { codexAdapter } from './CodexAdapter.js'
 export { openClawAdapter } from './OpenClawAdapter.js'
+export { allAdapters, getAdapterByName, isAdapterName } from './registry.js'
+export type { AdapterName } from './registry.js'

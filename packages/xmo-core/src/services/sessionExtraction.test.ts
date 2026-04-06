@@ -2,23 +2,40 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { extractFromAllSessions, extractFromSessions } from './sessionExtraction.js'
 
 // Mock dependencies
-vi.mock('../adapters/index.js', () => ({
-  claudeCodeAdapter: {
+vi.mock('../adapters/index.js', () => {
+  const claudeCodeAdapter = {
     name: 'claude-code',
     sessionGlobs: ['~/.claude/sessions/*/transcript.json'],
     findSessions: vi.fn().mockResolvedValue([]),
     parseSession: vi.fn(),
     getLastModified: vi.fn(),
-  },
-  openClawAdapter: {
+  }
+  const codexAdapter = {
+    name: 'codex',
+    sessionGlobs: ['~/.codex/sessions/**/*.jsonl'],
+    findSessions: vi.fn().mockResolvedValue([]),
+    parseSession: vi.fn(),
+    getLastModified: vi.fn(),
+  }
+  const openClawAdapter = {
     name: 'openclaw',
     sessionGlobs: ['~/.openclaw/agents/*/sessions/*.jsonl'],
     findSessions: vi.fn().mockResolvedValue([]),
     parseSession: vi.fn(),
     getLastModified: vi.fn(),
-  },
-  extractFromTranscript: vi.fn().mockReturnValue([]),
-}))
+  }
+  const allAdapters = [claudeCodeAdapter, codexAdapter, openClawAdapter]
+
+  return {
+    claudeCodeAdapter,
+    codexAdapter,
+    openClawAdapter,
+    allAdapters,
+    getAdapterByName: vi.fn((name: string) => allAdapters.find(adapter => adapter.name === name)),
+    isAdapterName: vi.fn((name: string) => allAdapters.some(adapter => adapter.name === name)),
+    extractFromTranscript: vi.fn().mockReturnValue([]),
+  }
+})
 
 vi.mock('../utils/fs.js', () => ({
   KG_FILE: '/tmp/test/kg/entities.jsonl',
@@ -37,8 +54,9 @@ describe('sessionExtraction', () => {
 
   describe('extractFromAllSessions', () => {
     it('should return success with zero counts when no sessions found', async () => {
-      const { claudeCodeAdapter, openClawAdapter } = await import('../adapters/index.js')
+      const { claudeCodeAdapter, codexAdapter, openClawAdapter } = await import('../adapters/index.js')
       ;(claudeCodeAdapter.findSessions as ReturnType<typeof vi.fn>).mockResolvedValue([])
+      ;(codexAdapter.findSessions as ReturnType<typeof vi.fn>).mockResolvedValue([])
       ;(openClawAdapter.findSessions as ReturnType<typeof vi.fn>).mockResolvedValue([])
 
       const result = await extractFromAllSessions()
@@ -103,7 +121,7 @@ describe('sessionExtraction', () => {
 
   describe('extractFromSessions', () => {
     it('should return error for unknown adapter', async () => {
-      const result = await extractFromSessions('unknown-adapter' as 'claude-code' | 'openclaw')
+      const result = await extractFromSessions('unknown-adapter' as 'claude-code')
 
       expect(result.success).toBe(false)
       expect(result.errors).toContain('Unknown adapter: unknown-adapter')
@@ -163,6 +181,35 @@ describe('sessionExtraction', () => {
       ;(extractFromTranscript as ReturnType<typeof vi.fn>).mockReturnValue(mockExtracted)
 
       const result = await extractFromSessions('openclaw')
+
+      expect(result.success).toBe(true)
+      expect(result.sessionsFound).toBe(1)
+      expect(result.entitiesExtracted).toBe(1)
+    })
+
+    it('should extract from codex adapter only', async () => {
+      const { codexAdapter, extractFromTranscript } = await import('../adapters/index.js')
+
+      const mockTranscript = {
+        sessionId: 'codex-session',
+        messages: [{ role: 'assistant' as const, content: 'Codex message' }],
+        startedAt: '2026-04-01T10:00:00.000Z',
+      }
+
+      const mockExtracted = [
+        {
+          type: 'concept' as const,
+          name: 'Codex Concept',
+          confidence: 'medium' as const,
+          matchedPatterns: ['capitalized'],
+        },
+      ]
+
+      ;(codexAdapter.findSessions as ReturnType<typeof vi.fn>).mockResolvedValue(['/path/to/codex-session.jsonl'])
+      ;(codexAdapter.parseSession as ReturnType<typeof vi.fn>).mockResolvedValue(mockTranscript)
+      ;(extractFromTranscript as ReturnType<typeof vi.fn>).mockReturnValue(mockExtracted)
+
+      const result = await extractFromSessions('codex')
 
       expect(result.success).toBe(true)
       expect(result.sessionsFound).toBe(1)

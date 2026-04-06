@@ -2,6 +2,7 @@ import { runExtract } from './commands/extract.js'
 import { runQuery } from './commands/query.js'
 import { runDream, runStats } from './commands/dream.js'
 import { runRecover, type RecoverOptions } from './commands/recover.js'
+import { getStatus } from './commands/status.js'
 
 export const SKILL_NAME = 'xmo'
 
@@ -30,7 +31,7 @@ export async function handleXmoCommand(args: string): Promise<string> {
       return runRecover(parseRecoverArgs(rest))
     }
     case 'extract':
-      return runExtract()
+      return runExtract(parseExtractArgs(rest))
     case 'query':
       // /xmo query keyword1 keyword2 ...
       return runQuery(rest, 20)
@@ -49,9 +50,19 @@ XMO - Extended Memory Optimization
 /xmo-dream - Trigger consolidation
 /xmo-stats - View statistics
 /xmo-recover [数量|所有] - Load memory into context (default 20)
+/xmo extract [claude-code|codex|openclaw] - Extract from a specific tool or auto-detect
 /xmo 恢复50条 - Load 50 records
 /xmo 恢复所有 - Load all matching records
 `
+}
+
+function parseExtractArgs(args: string[]): { adapter?: 'claude-code' | 'codex' | 'openclaw' } {
+  const firstArg = args[0]
+  if (firstArg === 'claude-code' || firstArg === 'codex' || firstArg === 'openclaw') {
+    return { adapter: firstArg }
+  }
+
+  return {}
 }
 
 function parseRecoverArgs(args: string[]): RecoverOptions {
@@ -69,13 +80,4 @@ function parseRecoverArgs(args: string[]): RecoverOptions {
   }
 
   return {}
-}
-
-function getStatus(): string {
-  return `
-XMO - Extended Memory Optimization
-Run /xmo-extract to extract entities from your session.
-Run /xmo-query <keyword> to search memory.
-Run /xmo-stats to view KG statistics.
-`
 }

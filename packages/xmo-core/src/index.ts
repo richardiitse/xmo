@@ -2,9 +2,11 @@
 export type { Entity, EntityType, Relation, RelationType, KGStore } from './types/index.js';
 
 // Adapters
-export type { ToolAdapter, Message, SessionTranscript, ExtractedEntity } from './adapters/index.js';
+export type { ToolAdapter, Message, SessionTranscript, ExtractedEntity, AdapterName } from './adapters/index.js';
 export { claudeCodeAdapter, extractFromTranscript } from './adapters/ClaudeCodeAdapter.js';
+export { codexAdapter } from './adapters/CodexAdapter.js';
 export { openClawAdapter } from './adapters/OpenClawAdapter.js';
+export { allAdapters, getAdapterByName, isAdapterName } from './adapters/index.js';
 
 // Schema functions
 export { createKGStore, addEntity, getEntitiesByType, getEntitiesByTag } from './schema/entity.js';
