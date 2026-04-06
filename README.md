@@ -17,7 +17,7 @@ XMO extracts entities from session transcripts using swappable adapters:
 
 | Source | Location | Adapter |
 |--------|----------|---------|
-| Claude Code | `~/.claude/sessions/*/transcript.json` | Built-in |
+| Claude Code | `~/.claude/projects/<encoded-path>/<session-uuid>.jsonl` | Built-in |
 | Codex | `~/.codex/sessions/**/*.jsonl` | Built-in |
 | OpenClaw | `~/.openclaw/agents/*/sessions/*.jsonl` | Built-in |
 

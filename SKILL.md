@@ -55,7 +55,7 @@ Use `xmo_extract_sessions` with `adapter: "all" | "claude-code" | "codex" | "ope
 
 Built-in adapters:
 
-- Claude Code: `~/.claude/sessions/*/transcript.json`
+- Claude Code: `~/.claude/projects/<encoded-path>/<session-uuid>.jsonl`
 - Codex: `~/.codex/sessions/**/*.jsonl`
 - OpenClaw: `~/.openclaw/agents/*/sessions/*.jsonl`
 

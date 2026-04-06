@@ -91,8 +91,9 @@ async function findLatestSession(adapters: ToolAdapter[]): Promise<{ adapter: To
   let latest: { adapter: ToolAdapter; filePath: string; mtime: Date } | null = null
 
   for (const adapter of adapters) {
-    const findSessions = adapter.findSessions ?? (async () => [])
-    const sessions = await findSessions()
+    const sessions = adapter.findSessions
+      ? await adapter.findSessions()
+      : []
 
     const withMtime = await Promise.all(
       sessions.map(async filePath => ({
